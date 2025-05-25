@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h4 class="mb-0">Two-Factor Authentication</h4>
+                </div>
+                <div class="card-body p-4">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <div class="text-center mb-4">
+                        <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                        <p class="lead">Please enter the verification code sent to your email.</p>
+                        <p class="text-muted small">The code will expire in 10 minutes</p>
+                    </div>
+
+                    <form method="POST" id="otpForm">
+                        <div class="otp-input-container mb-4 d-flex justify-content-center gap-2">
+                            <input type="text" class="form-control otp-input text-center" maxlength="1" pattern="[0-9]" required>
+                            <input type="text" class="form-control otp-input text-center" maxlength="1" pattern="[0-9]" required>
+                            <input type="text" class="form-control otp-input text-center" maxlength="1" pattern="[0-9]" required>
+                            <input type="text" class="form-control otp-input text-center" maxlength="1" pattern="[0-9]" required>
+                            <input type="text" class="form-control otp-input text-center" maxlength="1" pattern="[0-9]" required>
+                            <input type="text" class="form-control otp-input text-center" maxlength="1" pattern="[0-9]" required>
+                        </div>
+                        <input type="hidden" name="otp" id="otpValue">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Verify Code</button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <p class="mb-2 text-muted">Didn't receive the code?</p>
+                        <form method="POST" action="{{ url_for('resend_otp') }}" class="d-inline">
+                            <button type="submit" class="btn btn-link p-0">Resend Code</button>
+                        </form>
+                        <span class="text-muted mx-2">|</span>
+                        <a href="{{ url_for('login') }}" class="btn btn-link p-0">Back to Login</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.otp-input {
+    width: 50px !important;
+    height: 50px;
+    font-size: 24px;
+    border-radius: 8px;
+    border: 2px solid #dee2e6;
+}
+
+.otp-input:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+@media (max-width: 576px) {
+    .otp-input {
+        width: 40px !important;
+        height: 40px;
+        font-size: 20px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const otpInputs = document.querySelectorAll('.otp-input');
+    const otpForm = document.getElementById('otpForm');
+    const otpValue = document.getElementById('otpValue');
+
+    // Focus first input on page load
+    otpInputs[0].focus();
+
+    // Handle input in OTP fields
+    otpInputs.forEach((input, index) => {
+        // Allow only numbers
+        input.addEventListener('keypress', (e) => {
+            if (e.key < '0' || e.key > '9') {
+                e.preventDefault();
+            }
+        });
+
+        // Handle paste event
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pastedData = e.clipboardData.getData('text').slice(0, 6);
+            if (/^\d+$/.test(pastedData)) {
+                pastedData.split('').forEach((digit, i) => {
+                    if (otpInputs[i]) {
+                        otpInputs[i].value = digit;
+                    }
+                });
+                if (pastedData.length === 6) {
+                    submitForm();
+                }
+            }
+        });
+
+        // Handle input
+        input.addEventListener('input', (e) => {
+            if (e.target.value) {
+                if (index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+                checkComplete();
+            }
+        });
+
+        // Handle backspace
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                otpInputs[index - 1].focus();
+            }
+        });
+    });
+
+    function checkComplete() {
+        const otp = Array.from(otpInputs).map(input => input.value).join('');
+        if (otp.length === 6) {
+            submitForm();
+        }
+    }
+
+    function submitForm() {
+        const otp = Array.from(otpInputs).map(input => input.value).join('');
+        otpValue.value = otp;
+        otpForm.submit();
+    }
+});
+</script>
+{% endblock %}

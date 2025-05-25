@@ -1,0 +1,11 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Login Verification Code{% endblock %}
+
+{% block content %}
+<h2>Hello {{ user.username }},</h2>
+<p>Your login verification code for Share Portfolio is:</p>
+<div class="code-box">{{ otp }}</div>
+<p>This code will expire in 10 minutes.</p>
+<p>If you didn't request this code, please ignore this email or contact support if you have concerns.</p>
+{% endblock %}

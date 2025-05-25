@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Share Portfolio{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Portfolio Dashboard</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Portfolio Summary Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Total Portfolio Summary</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <h6>Total Investment</h6>
+                    <p class="h4">₹{{ "%.2f"|format(total_portfolio.total_investment) }}</p>
+                </div>
+                <div class="col-md-3">
+                    <h6>Current Value</h6>
+                    <p class="h4">₹{{ "%.2f"|format(total_portfolio.current_value) }}</p>
+                </div>
+                <div class="col-md-3">
+                    <h6>Profit/Loss</h6>
+                    <p class="h4 {% if total_portfolio.profit_loss >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        ₹{{ "%.2f"|format(total_portfolio.profit_loss) }}
+                    </p>
+                </div>
+                <div class="col-md-3">
+                    <h6>P/L %</h6>
+                    <p class="h4 {% if total_portfolio.profit_loss_percentage >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ "%.2f"|format(total_portfolio.profit_loss_percentage) }}%
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Account Button -->
+    <button type="button" class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+        <i class="fas fa-plus"></i> Add Trading Account
+    </button>
+
+    <!-- Trading Accounts -->
+    {% for account in accounts %}
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">{{ account.name }}</h5>
+            <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" 
+                    data-bs-target="#addShareModal" data-account-id="{{ account.id }}">
+                <i class="fas fa-plus"></i> Add Share
+            </button>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Trading Account Details</h5>
+            <p class="card-text">Account Number: {{ account.account_number }}</p>
+            <p class="card-text">Broker: {{ account.broker }}</p>
+            <div class="text-end">
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal{{ account.id }}">
+                    <i class="fas fa-trash-alt"></i> Remove Account
+                </button>
+            </div>
+
+            <!-- Account Summary -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <h6>Total Investment</h6>
+                    <p class="h5">₹{{ "%.2f"|format(portfolio_summary[account.id].total_investment) }}</p>
+                </div>
+                <div class="col-md-3">
+                    <h6>Current Value</h6>
+                    <p class="h5">₹{{ "%.2f"|format(portfolio_summary[account.id].current_value) }}</p>
+                </div>
+                <div class="col-md-3">
+                    <h6>Profit/Loss</h6>
+                    <p class="h5 {% if portfolio_summary[account.id].profit_loss >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        ₹{{ "%.2f"|format(portfolio_summary[account.id].profit_loss) }}
+                    </p>
+                </div>
+                <div class="col-md-3">
+                    <h6>P/L %</h6>
+                    <p class="h5 {% if portfolio_summary[account.id].profit_loss_percentage >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ "%.2f"|format(portfolio_summary[account.id].profit_loss_percentage) }}%
+                    </p>
+                </div>
+            </div>
+
+            <!-- Shares Table -->
+            {% if account.shares %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Share Name</th>
+                            <th>Quantity</th>
+                            <th>Buying Price</th>
+                            <th>Current Price</th>
+                            <th>Total Investment</th>
+                            <th>Current Value</th>
+                            <th>Profit/Loss</th>
+                            <th>P/L %</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for share in account.shares %}
+                        <tr>
+                            <td>{{ share.name }}</td>
+                            <td>{{ share.quantity }}</td>
+                            <td>₹{{ "%.2f"|format(share.buying_price) }}</td>
+                            <td>₹{{ "%.2f"|format(share.current_price) }}</td>
+                            <td>₹{{ "%.2f"|format(share.total_investment) }}</td>
+                            <td>₹{{ "%.2f"|format(share.current_value) }}</td>
+                            <td class="{% if share.profit_loss >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                ₹{{ "%.2f"|format(share.profit_loss) }}
+                            </td>
+                            <td class="{% if share.profit_loss_percentage >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ "%.2f"|format(share.profit_loss_percentage) }}%
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('remove_share', share_id=share.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-danger btn-sm" 
+                                            onclick="return confirm('Are you sure you want to remove this share?')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No shares added yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Delete Account Modal -->
+    <div class="modal fade" id="deleteAccountModal{{ account.id }}" tabindex="-1" aria-labelledby="deleteAccountModalLabel{{ account.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteAccountModalLabel{{ account.id }}">Confirm Account Removal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to remove this trading account?</p>
+                    <p><strong>Account Number:</strong> {{ account.account_number }}</p>
+                    <p><strong>Broker:</strong> {{ account.broker }}</p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        This action cannot be undone. All shares and transactions associated with this account will be deleted.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="{{ url_for('remove_account', account_id=account.id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-danger">Remove Account</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if not accounts %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> You haven't added any trading accounts yet. Click the "Add Trading Account" button to get started.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Account Modal -->
+<div class="modal fade" id="addAccountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Trading Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_account') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="accountName" class="form-label">Account Name</label>
+                        <input type="text" class="form-control" id="accountName" name="name" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Share Modal -->
+<div class="modal fade" id="addShareModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Share</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_share') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="account_id" id="modalAccountId">
+                    <div class="mb-3">
+                        <label for="shareName" class="form-label">Share Name</label>
+                        <input type="text" class="form-control" id="shareName" name="share_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" required min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="buyingPrice" class="form-label">Buying Price</label>
+                        <input type="number" class="form-control" id="buyingPrice" name="buying_price" required step="0.01">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Share</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set account_id in modal when Add Share button is clicked
+    var addShareModal = document.getElementById('addShareModal')
+    addShareModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget
+        var accountId = button.getAttribute('data-account-id')
+        addShareModal.querySelector('#modalAccountId').value = accountId
+    })
+})
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh page every 5 minutes to update share prices
+setTimeout(function() {
+    location.reload();
+}, 300000);
+</script>
+{% endblock %}
